@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Guiado de ACLS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            color: #1f2937;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { background: linear-gradient(120deg, #1e40af 0%, #3b82f6 100%); color: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); position: relative; }
+        .card { background-color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); padding: 1.5rem; margin-bottom: 1.5rem; transition: all 0.3s ease; }
+        .card:hover { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
+
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; text-align: center; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background-color: #3b82f6; color: white; } .btn-primary:hover:not(:disabled) { background-color: #2563eb; }
+        .btn-success { background-color: #10b981; color: white; } .btn-success:hover:not(:disabled) { background-color: #059669; }
+        .btn-danger { background-color: #ef4444; color: white; } .btn-danger:hover:not(:disabled) { background-color: #dc2626; }
+        .btn-warning { background-color: #f59e0b; color: white; } .btn-warning:hover:not(:disabled) { background-color: #d97706; }
+        .btn-secondary { background-color: #6b7280; color: white; } .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+
+        .step-indicator { display: flex; justify-content: space-between; margin-bottom: 2rem; position: relative; }
+        .step { width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 2; }
+        .step.active { background-color: #3b82f6; color: white; }
+        .step.completed { background-color: #10b981; color: white; }
+        .step-indicator::before { content: ''; position: absolute; top: 20px; left: 0; right: 0; height: 2px; background-color: #e5e7eb; z-index: 1; }
+
+        .hidden { display: none; }
+        .monitor { width: 100%; height: 200px; background-color: #1f2937; border-radius: 8px; margin: 1rem 0; overflow: hidden; position: relative; }
+        
+        .feedback { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: bold; }
+        .correct { background-color: #d1fae5; color: #065f46; }
+        .incorrect { background-color: #fee2e2; color: #991b1b; }
+
+        .compression-guide { display: flex; justify-content: center; align-items: center; margin: 1rem 0; flex-direction: column; }
+        .compression-circle { width: 120px; height: 120px; border-radius: 50%; background-color: #ef4444; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; transition: transform 0.3s ease; }
+        @keyframes compress { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .compressing { animation: compress 0.5s ease-in-out; }
+        .baby-shark-rhythm { display: flex; justify-content: center; gap: 5px; margin-top: 15px; }
+        .rhythm-dot { width: 12px; height: 12px; border-radius: 50%; background-color: #6b7280; }
+        .rhythm-dot.active { background-color: #3b82f6; transform: scale(1.2); }
+
+        .footer { text-align: center; margin-top: 2rem; padding: 1rem; color: #6b7280; font-size: 0.875rem; }
+        .back-button { position: absolute; top: 15px; left: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="btn btn-secondary back-button" onclick="voltarEtapa()"><i class="fas fa-arrow-left"></i> Voltar</button>
+            <h1 class="text-2xl font-bold text-center">Simulador Guiado de Suporte Avançado de Vida</h1>
+            <p class="text-center mt-2">Baseado no algoritmo da American Heart Association</p>
+        </div>
+        
+        <div class="step-indicator">
+            <div class="step active" id="step-1">1</div><div class="step" id="step-2">2</div>
+            <div class="step" id="step-3">3</div><div class="step" id="step-4">4</div>
+            <div class="step" id="step-5">5</div><div class="step" id="step-6">6</div>
+        </div>
+        
+        <div class="card" id="etapa1">
+            <h2 class="text-xl font-bold mb-4">1. Avaliação Inicial e Segurança</h2>
+            <ul class="list-disc list-inside mb-4 space-y-2">
+                <li><strong>Verificar a segurança da cena.</strong></li>
+                <li><strong>Verificar a responsividade da vítima.</strong></li>
+                <li><strong>Chamar por ajuda</strong> e <strong>ativar o serviço de emergência</strong>.</li>
+                <li>Pedir para alguém <strong>obter um DEA</strong>.</li>
+            </ul>
+            <button class="btn btn-primary" onclick="proximaEtapa(1)">Cena Segura, Ajuda a Caminho</button>
+        </div>
+        
+        <div class="card hidden" id="etapa2">
+            <h2 class="text-xl font-bold mb-4">2. Procurar por respiração normal e verificar o pulso simultaneamente</h2>
+            <p class="mb-4">Esta verificação não deve levar mais de 10 segundos. Qual o estado da vítima?</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-green-100 p-4 rounded-lg text-center"><h3 class="font-bold mb-2">Respiração normal, pulso presente</h3><button class="btn btn-success mt-2" onclick="selecionarOpcao('normal')">Selecionar</button></div>
+                <div class="bg-yellow-100 p-4 rounded-lg text-center"><h3 class="font-bold mb-2">Sem respiração normal, pulso presente</h3><button class="btn btn-warning mt-2" onclick="selecionarOpcao('pulso_presente')">Selecionar</button></div>
+                <div class="bg-red-100 p-4 rounded-lg text-center"><h3 class="font-bold mb-2">Sem respiração (ou gasping), sem pulso palpável</h3><button class="btn btn-danger mt-2" onclick="selecionarOpcao('sem_pulso')">Selecionar</button></div>
+            </div>
+            <div id="resultado-avaliacao" class="hidden"></div>
+        </div>
+        
+        <div class="card hidden" id="etapa3">
+            <h2 class="text-xl font-bold mb-4">3. Iniciar RCP de Alta Qualidade</h2>
+            <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                <p>A vítima está em Parada Cardiorrespiratória (PCR). Inicie imediatamente o ciclo de 30 compressões para 2 ventilações.</p>
+                <p class="mt-2 font-semibold">Mantenha a frequência de 100-120 compressões por minuto. O ritmo da música "Baby Shark" pode ajudar.</p>
+            </div>
+            
+            <div class="compression-guide">
+                <div class="compression-circle" id="compression-count">30</div>
+                <p class="mt-2 font-bold" id="compression-state">PRONTO PARA INICIAR</p>
+                <div class="baby-shark-rhythm">
+                    <div class="rhythm-dot" id="dot-1"></div><div class="rhythm-dot" id="dot-2"></div>
+                    <div class="rhythm-dot" id="dot-3"></div><div class="rhythm-dot" id="dot-4"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <button class="btn btn-primary" id="start-rcp" onclick="iniciarRCP()">Iniciar Ciclo de RCP</button>
+                <button class="btn btn-danger" id="stop-rcp" onclick="pararRCP()" disabled>Parar RCP</button>
+            </div>
+            <div class="text-center"><button class="btn btn-success" onclick="proximaEtapa(3)">O DEA Chegou!</button></div>
+        </div>
+        
+        <div class="card hidden" id="etapa4">
+            <h2 class="text-xl font-bold mb-4">4. Análise do Ritmo e Desfibrilação</h2>
+            <p>Conecte as pás do DEA e afaste-se da vítima. Clique no botão abaixo para analisar o ritmo.</p>
+            
+            <div class="monitor" id="rhythm-monitor"><canvas id="rhythmCanvas"></canvas></div>
+            <div id="analisando-feedback" class="hidden text-center text-lg font-semibold text-blue-600 my-4">Analisando ritmo...</div>
+            <p class="text-center font-bold text-lg hidden" id="rhythm-name-display"></p>
+
+            <div class="text-center my-4"><button class="btn btn-primary" id="analisar-ritmo-btn" onclick="apresentarRitmoAleatorio()">Analisar Ritmo Cardíaco</button></div>
+            
+            <div id="dea-actions" class="hidden">
+                <h3 class="font-bold mb-3 text-center">O ritmo foi analisado. Qual a sua conduta?</h3>
+                <div class="flex gap-4 justify-center">
+                    <button class="btn btn-success" onclick="checkIdentification(true)">Administrar Choque</button>
+                    <button class="btn btn-danger" onclick="checkIdentification(false)">Não Chocar / Continuar RCP</button>
+                </div>
+            </div>
+            <div class="feedback hidden" id="feedback"></div>
+        </div>
+
+        <div class="card hidden" id="etapa5">
+            <h2 class="text-xl font-bold mb-4">5. Cuidados Contínuos</h2>
+            <div id="instrucoes-finais"></div>
+            <div class="text-center mt-6"><button class="btn btn-primary" onclick="irParaEtapa(6)">Ver Material de Apoio</button></div>
+        </div>
+
+        <div class="card hidden" id="etapa6">
+            <h2 class="text-xl font-bold mb-4">6. Material de Apoio e Consulta</h2>
+            <div class="space-y-4">
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-gray-800">Ritmos Cardíacos de PCR</h3>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><strong>Fibrilação Ventricular (FV):</strong> Atividade elétrica caótica, sem contração ventricular efetiva. Ritmo chocável.</li>
+                        <li><strong>Taquicardia Ventricular sem Pulso (TVSP):</strong> Contrações ventriculares rápidas e ineficazes, sem débito cardíaco. Ritmo chocável.</li>
+                        <li><strong>Atividade Elétrica Sem Pulso (AESP):</strong> Atividade elétrica organizada no monitor, mas sem pulso palpável. Ritmo não chocável.</li>
+                        <li><strong>Assistolia:</strong> Ausência total de atividade elétrica (linha reta). Ritmo não chocável.</li>
+                    </ul>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-blue-800">Protocolo da Linha Reta (Confirmar Assistolia)</h3>
+                    <ol class="list-decimal list-inside mt-2 space-y-1">
+                        <li><strong>Verificar Conexões:</strong> Checar se cabos e eletrodos estão bem conectados.</li>
+                        <li><strong>Ajustar Ganho:</strong> Aumentar a amplitude no monitor para descartar FV de baixa voltagem.</li>
+                        <li><strong>Mudar Derivação:</strong> Verificar o ritmo em outra derivação.</li>
+                    </ol>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-red-800">Causas Reversíveis (5Hs e 5Ts)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 mt-2">
+                        <div><strong>5H:</strong><ul class="list-disc list-inside"><li>Hipovolemia</li><li>Hipóxia</li><li>Hidrogênio (acidose)</li><li>Hipo/Hipercalemia</li><li>Hipotermia</li></ul></div>
+                        <div><strong>5T:</strong><ul class="list-disc list-inside"><li>Tensão no tórax (pneumotórax)</li><li>Tamponamento cardíaco</li><li>Toxinas</li><li>Trombose pulmonar</li><li>Trombose coronariana</li></ul></div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-6"><button class="btn btn-primary" onclick="reiniciar()">Reiniciar Simulação</button></div>
+        </div>
+
+        <div class="footer">
+            <p>Este simulador é uma ferramenta educacional. Em uma emergência real, siga os protocolos locais e ligue para o serviço de emergência.</p>
+            <p class="mt-2 font-semibold">Desenvolvido por Fernando Luis G. R.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- GERENCIAMENTO DE ESTADO E NAVEGAÇÃO ---
+        let etapaAtual = 1;
+        let historicoEtapas = [1];
+        
+        function atualizarIndicadorEtapas() {
+            for (let i = 1; i <= 6; i++) {
+                const step = document.getElementById(`step-${i}`);
+                if (i < etapaAtual) step.className = 'step completed';
+                else if (i === etapaAtual) step.className = 'step active';
+                else step.className = 'step';
+            }
+        }
+        
+        function proximaEtapa(etapa) { irParaEtapa(etapa + 1); }
+        
+        function irParaEtapa(numeroEtapa) {
+            document.getElementById(`etapa${etapaAtual}`).classList.add('hidden');
+            historicoEtapas.push(etapaAtual);
+            etapaAtual = numeroEtapa;
+            document.getElementById(`etapa${etapaAtual}`).classList.remove('hidden');
+            atualizarIndicadorEtapas();
+            if (etapaAtual === 4) initCanvas();
+        }
+
+        function voltarEtapa() {
+            if (historicoEtapas.length > 1) {
+                document.getElementById(`etapa${etapaAtual}`).classList.add('hidden');
+                etapaAtual = historicoEtapas.pop();
+                document.getElementById(`etapa${etapaAtual}`).classList.remove('hidden');
+                atualizarIndicadorEtapas();
+            }
+        }
+        function reiniciar() { location.reload(); }
+
+        // --- LÓGICA DA ETAPA 2: AVALIAÇÃO ---
+        function selecionarOpcao(opcao) {
+            const resultado = document.getElementById('resultado-avaliacao');
+            resultado.classList.remove('hidden');
+            let conteudoFinal = '';
+            let proximoPassoFn = '';
+
+            if (opcao === 'normal') {
+                conteudoFinal = `<div class="bg-green-100 p-4 rounded-lg"><h3 class="font-bold">Cenário Concluído</h3><p>A vítima está estável e o socorro está a caminho. Você agiu corretamente.</p></div>`;
+                proximoPassoFn = `irParaEtapa(6)`;
+                resultado.innerHTML = `<div class="bg-green-100 p-4 rounded-lg mt-4"><h3 class="font-bold mb-2">Ação: Monitorar</h3><p>Monitore a vítima até a chegada do serviço de emergência.</p><div class="text-center mt-4"><button class="btn btn-primary" onclick="${proximoPassoFn}">Ver Material de Apoio</button></div></div>`;
+            } else if (opcao === 'pulso_presente') {
+                conteudoFinal = `<div class="bg-yellow-100 p-4 rounded-lg"><h3 class="font-bold">Cenário Concluído</h3><p>Você iniciou o suporte ventilatório. Continue até a chegada do socorro ou mudança no quadro da vítima.</p></div>`;
+                proximoPassoFn = `irParaEtapa(6)`;
+                resultado.innerHTML = `<div class="bg-yellow-100 p-4 rounded-lg mt-4"><h3 class="font-bold mb-2">Ação: Ventilação de Resgate</h3><p>Realize 1 ventilação a cada 6 segundos. Cheque o pulso a cada 2 minutos.</p><div class="text-center mt-4"><button class="btn btn-primary" onclick="${proximoPassoFn}">Ver Material de Apoio</button></div></div>`;
+            } else if (opcao === 'sem_pulso') {
+                proximoPassoFn = `proximaEtapa(2)`;
+                resultado.innerHTML = `<div class="bg-red-100 p-4 rounded-lg mt-4"><h3 class="font-bold mb-2">Ação: Iniciar RCP Imediatamente</h3><p>A vítima está em Parada Cardiorrespiratória (PCR).</p><div class="text-center mt-4"><button class="btn btn-primary" onclick="${proximoPassoFn}">Iniciar RCP</button></div></div>`;
+            }
+            document.getElementById('instrucoes-finais').innerHTML = conteudoFinal;
+        }
+
+        // --- LÓGICA DA ETAPA 3: RCP ---
+        let intervaloRCP, intervaloRitmo, estadoRCP = 'parado', contagemCompressoes = 30, dotAtual = 0;
+        function iniciarRCP() {
+            document.getElementById('start-rcp').disabled = true; document.getElementById('stop-rcp').disabled = false;
+            estadoRCP = 'comprimindo'; document.getElementById('compression-state').textContent = 'COMPRIMINDO';
+            iniciarRitmoBabyShark();
+            intervaloRCP = setInterval(() => {
+                if (estadoRCP !== 'comprimindo') return;
+                const circle = document.getElementById('compression-count');
+                circle.classList.add('compressing');
+                setTimeout(() => circle.classList.remove('compressing'), 300);
+                contagemCompressoes--;
+                document.getElementById('compression-count').textContent = contagemCompressoes;
+                if (contagemCompressoes === 0) {
+                    estadoRCP = 'ventilando'; document.getElementById('compression-state').textContent = 'VENTILANDO (2x)';
+                    setTimeout(() => {
+                        contagemCompressoes = 30; document.getElementById('compression-count').textContent = contagemCompressoes;
+                        estadoRCP = 'comprimindo'; document.getElementById('compression-state').textContent = 'COMPRIMINDO';
+                    }, 2000);
+                }
+            }, 500);
+        }
+        function iniciarRitmoBabyShark() {
+            clearInterval(intervaloRitmo);
+            intervaloRitmo = setInterval(() => {
+                dotAtual = (dotAtual % 4) + 1;
+                for (let i = 1; i <= 4; i++) document.getElementById(`dot-${i}`).classList.remove('active');
+                document.getElementById(`dot-${dotAtual}`).classList.add('active');
+            }, 125);
+        }
+        function pararRCP() {
+            clearInterval(intervaloRCP); clearInterval(intervaloRitmo);
+            document.getElementById('start-rcp').disabled = false; document.getElementById('stop-rcp').disabled = true;
+            document.getElementById('compression-state').textContent = 'RCP INTERROMPIDO'; estadoRCP = 'parado';
+            for (let i = 1; i <= 4; i++) document.getElementById(`dot-${i}`).classList.remove('active');
+        }
+
+        // --- LÓGICA DA ETAPA 4: DEA E MONITOR DE RITMO ---
+        const canvas = document.getElementById('rhythmCanvas'), ctx = canvas.getContext('2d'), monitor = document.getElementById('rhythm-monitor');
+        let animationFrameId, currentRhythmFunction = null, lastY, lastTimestamp, totalTime, ritmoAtualSorteado;
+        const rhythmMap = {
+            fv: { name: 'Fibrilação Ventricular (FV)', shockable: true, color: '#ef4444' },
+            tv: { name: 'Taquicardia Ventricular s/ Pulso (TVSP)', shockable: true, color: '#f59e0b' },
+            asystole: { name: 'Assistolia', shockable: false, color: '#6b7280' },
+            aesp: { name: 'Atividade Elétrica Sem Pulso (AESP)', shockable: false, color: '#3b82f6' },
+            sinus: { name: 'Ritmo Organizado (ex: Sinusal)', shockable: false, color: '#10b981' }
+        };
+
+        function initCanvas() { resizeCanvas(); window.addEventListener('resize', resizeCanvas); }
+        function resizeCanvas() { canvas.width = monitor.clientWidth; canvas.height = monitor.clientHeight; ctx.lineWidth = 2; lastY = canvas.height / 2; ctx.fillStyle = '#1f2937'; ctx.fillRect(0,0,canvas.width, canvas.height); }
+        function startRhythmAnimation() { if (animationFrameId) cancelAnimationFrame(animationFrameId); lastTimestamp = performance.now(); lastY = canvas.height / 2; totalTime = 0; animateLoop(lastTimestamp); }
+        function animateLoop(timestamp) {
+            totalTime += (timestamp - lastTimestamp) / 1000; lastTimestamp = timestamp; const step = 2;
+            const imageData = ctx.getImageData(step, 0, canvas.width - step, canvas.height); ctx.putImageData(imageData, 0, 0);
+            ctx.fillStyle = '#1f2937'; ctx.fillRect(canvas.width - step, 0, step, canvas.height);
+            const newY = currentRhythmFunction(totalTime);
+            ctx.beginPath(); ctx.moveTo(canvas.width - step, lastY); ctx.lineTo(canvas.width, newY); ctx.stroke();
+            lastY = newY; animationFrameId = requestAnimationFrame(animateLoop);
+        }
+
+        const yOffset = () => canvas.height / 2;
+        const createEcgComponent = (amp, pos, width) => t => amp * Math.exp(-Math.pow((t - pos) / width, 2));
+        function createEcgGenerator(p) { const pW = createEcgComponent(p.p.a,p.p.p,p.p.w), qrs = t => createEcgComponent(p.q.a,p.q.p,p.q.w)(t) + createEcgComponent(p.r.a,p.r.p,p.r.w)(t) + createEcgComponent(p.s.a,p.s.p,p.s.w)(t), tW = createEcgComponent(p.t.a,p.t.p,p.t.w); return t => { const ph = (t % (60 / p.b)) / (60 / p.b); return yOffset() - (pW(ph) + qrs(ph) + tW(ph)); }; }
+        const rhythmGenerators = {
+            fv: t => yOffset() + (Math.random() - 0.5) * 80,
+            tv: t => yOffset() - Math.sin(t * Math.PI * (180 / 60) * 2) * 70,
+            asystole: t => yOffset(),
+            aesp: createEcgGenerator({ b: 40, p:{a:0,p:.1,w:.05}, q:{a:-10,p:.24,w:.03}, r:{a:50,p:.25,w:.08}, s:{a:-15,p:.27,w:.03}, t:{a:15,p:.5,w:.1} }),
+            sinus: createEcgGenerator({ b: 75, p:{a:10,p:.1,w:.05}, q:{a:-5,p:.19,w:.01}, r:{a:60,p:.2,w:.02}, s:{a:-10,p:.22,w:.01}, t:{a:20,p:.4,w:.08} })
+        };
+        
+        function apresentarRitmoAleatorio() {
+            const analisarBtn = document.getElementById('analisar-ritmo-btn');
+            const analisandoFeedback = document.getElementById('analisando-feedback');
+            
+            analisarBtn.disabled = true;
+            analisandoFeedback.classList.remove('hidden');
+
+            setTimeout(() => {
+                const rhythmKeys = Object.keys(rhythmMap);
+                ritmoAtualSorteado = rhythmKeys[Math.floor(Math.random() * rhythmKeys.length)];
+                currentRhythmFunction = rhythmGenerators[ritmoAtualSorteado];
+                ctx.strokeStyle = rhythmMap[ritmoAtualSorteado].color;
+                startRhythmAnimation();
+                analisandoFeedback.classList.add('hidden');
+                document.getElementById('dea-actions').classList.remove('hidden');
+                document.getElementById('feedback').classList.add('hidden');
+                document.getElementById('rhythm-name-display').classList.add('hidden');
+            }, 2000);
+        }
+
+        function checkIdentification(isShockableGuess) {
+            const feedbackEl = document.getElementById('feedback');
+            const rhythmInfo = rhythmMap[ritmoAtualSorteado];
+            const isCorrect = isShockableGuess === rhythmInfo.shockable;
+
+            document.getElementById('rhythm-name-display').textContent = `O ritmo era: ${rhythmInfo.name}`;
+            document.getElementById('rhythm-name-display').classList.remove('hidden');
+
+            if (isCorrect) {
+                feedbackEl.className = "feedback correct";
+                feedbackEl.textContent = rhythmInfo.shockable ? "Correto! Choque administrado. Retome a RCP imediatamente." : "Correto! Ritmo não chocável. Continue a RCP.";
+                setTimeout(() => { mostrarInstrucoesFinais(rhythmInfo.shockable); proximaEtapa(4); }, 3000);
+            } else {
+                feedbackEl.className = "feedback incorrect";
+                feedbackEl.textContent = "Incorreto. A decisão não foi a adequada para este ritmo. Reveja o ritmo e tente novamente.";
+                setTimeout(() => { 
+                    document.getElementById('analisar-ritmo-btn').disabled = false;
+                    document.getElementById('dea-actions').classList.add('hidden');
+                    feedbackEl.classList.add('hidden');
+                    document.getElementById('rhythm-name-display').classList.add('hidden');
+                    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+                    resizeCanvas();
+                }, 4000);
+            }
+            feedbackEl.classList.remove('hidden');
+        }
+
+        function mostrarInstrucoesFinais(choqueAdministrado) {
+            const container = document.getElementById('instrucoes-finais');
+            if(choqueAdministrado) {
+                container.innerHTML = `<div class="bg-green-100 p-4 rounded-lg"><h3 class="font-bold text-green-800 mb-2">Pós-Choque:</h3><ul class="list-disc list-inside"><li><strong>RCP Imediata:</strong> Continue as compressões por mais 2 minutos.</li><li><strong>Reavaliação:</strong> Após 2 minutos, o DEA irá reanalisar o ritmo.</li><li><strong>Acesso e Medicação:</strong> Estabeleça um acesso IV/IO e prepare a epinefrina.</li></ul></div>`;
+            } else {
+                container.innerHTML = `<div class="bg-blue-100 p-4 rounded-lg"><h3 class="font-bold text-blue-800 mb-2">Ritmo Não Chocável:</h3><ul class="list-disc list-inside"><li><strong>RCP Contínua:</strong> Continue as compressões de alta qualidade.</li><li><strong>Epinefrina Precoce:</strong> Administre 1mg de epinefrina IV/IO o mais rápido possível.</li><li><strong>Causas Reversíveis:</strong> Busque e trate os 5Hs e 5Ts.</li></ul></div>`;
+            }
+        }
+    </script>
+</body>
+</html>
